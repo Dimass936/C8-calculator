@@ -514,7 +514,10 @@ const S = {
   vip: LS.get("c8.vip", false),
   auto: LS.get("c8.auto", true),
   trust: LS.get("c8.trust", false),
-  trustLevel: LS.get("c8.trustLevel", "0")
+  trustLevel: LS.get("c8.trustLevel", "0"),
+  // null = «идти за периодом расчёта»; строка = пользователь задал свой период
+  trustStart: LS.get("c8.trustStart", null),
+  trustEnd: LS.get("c8.trustEnd", null)
 };
 function save(){
   LS.set("c8.team", S.team); LS.set("c8.divDays", S.divDays);
@@ -524,6 +527,7 @@ function save(){
   LS.set("c8.currency", S.currency); LS.set("c8.x", S.x); LS.set("c8.rate", S.rate);
   LS.set("c8.l1", S.l1); LS.set("c8.vip", S.vip); LS.set("c8.auto", S.auto);
   LS.set("c8.trust", S.trust); LS.set("c8.trustLevel", S.trustLevel);
+  LS.set("c8.trustStart", S.trustStart); LS.set("c8.trustEnd", S.trustEnd);
 }
 
 /* =========================================================================
@@ -793,34 +797,54 @@ function daysTable(days){
 function toggleDays(){ R.expanded = !R.expanded; renderView(); }
 function setMode(m){ S.mode = m; save(); R = {}; renderView(); }
 
-/** Поля трастового фонда: уровень + выводимый период (задать его нельзя) */
+/** Поля трастового фонда: уровень + период (по умолчанию как в расчёте) */
 function trustFields(){
   const opts = TRUST_LEVELS.map((l, i) =>
     `<option value="${i}" ${Number(S.trustLevel) === i ? "selected" : ""}>${l.key} · ${l.sum} $</option>`).join("");
   const i = Number(S.trustLevel) || 0;
   const lvl = TRUST_LEVELS[i];
   const p = trustPeriod();
-  const derived = S.mode === "date"
-    ? "Период фонда совпадает с периодом расчёта."
-    : "В этом режиме периода нет — берём 6 месяцев от даты начала (срок по правилам).";
+  const note = p.follows
+    ? (S.mode === "date"
+        ? "Период фонда совпадает с периодом расчёта — можно задать свой."
+        : "6 месяцев от даты начала — срок по правилам. Можно задать свой период.")
+    : "Свой период фонда, с периодом расчёта не связан.";
   return `
     <div class="row"><span class="t">Уровень (VIP Траст)</span>
       <select onchange="setP('trustLevel', this.value)">${opts}</select></div>
     ${row("Прибыль в день", fmt(lvl.perDayD) + " $", "muted")}
-    ${row("Период", fmtDate(p.from) + " — " + fmtDate(p.to), "muted")}
+    <div class="row"><span class="t">Период с</span>
+      <input type="date" value="${iso(p.from)}" onchange="setTrustDate('trustStart', this.value)"></div>
+    <div class="row"><span class="t">по</span>
+      <input type="date" value="${iso(p.to)}" onchange="setTrustDate('trustEnd', this.value)"></div>
     ${row("Дней в периоде", String(p.days), "muted")}
-    <div class="hint">${derived} Тело возвращается в конце срока, дни считаются включительно.</div>`;
+    <div class="hint">${note} Тело возвращается в конце срока, дни считаются включительно.</div>
+    ${p.follows ? "" : `<div style="padding:0 16px 14px;display:flex;justify-content:flex-end">
+      <button class="mini" onclick="clearTrustPeriod()">К периоду расчёта</button></div>`}`;
 }
 function setP(key, val){ S[key] = val; save(); R = {}; renderView(); }
 function setTrust(on){ S.trust = on; save(); R = {}; renderView(); }
 
-/** Период фонда ВСЕГДА выводится из периода расчёта.
-    Отдельных полей нет намеренно: иначе легко получить молчаливые 6 месяцев
-    вместо выбранного периода (на этом уже спотыкались). */
+/** Период фонда: по умолчанию ВЫВОДИТСЯ из периода расчёта, но пользователь может
+    задать свой. null в trustStart/trustEnd означает «идти за расчётом» —
+    именно так мы страхуемся от старого бага, когда молча оставались 6 месяцев. */
 function trustPeriod(){
-  const from = parseDate(S.start);
-  const to = (S.mode === "date") ? parseDate(S.end) : addMonths(from, 6);
-  return { from, to, days: diffDays(from, to) + 1 };
+  const from = S.trustStart ? parseDate(S.trustStart) : parseDate(S.start);
+  const derivedTo = (S.mode === "date") ? parseDate(S.end) : addMonths(from, 6);
+  const to = S.trustEnd ? parseDate(S.trustEnd) : derivedTo;
+  return { from, to, days: diffDays(from, to) + 1,
+           follows: !S.trustStart && !S.trustEnd };
+}
+
+/** Пользователь задал свою дату — дальше не следуем за периодом расчёта */
+function setTrustDate(key, val){
+  S[key] = val || null;
+  save(); R = {}; renderView();
+}
+/** Вернуть период фонда к периоду расчёта */
+function clearTrustPeriod(){
+  S.trustStart = null; S.trustEnd = null;
+  save(); R = {}; renderView();
 }
 
 function calcProfit(){

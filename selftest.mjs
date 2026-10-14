@@ -150,8 +150,37 @@ const probe = `
     if (R.trust) errors.push("фонд выключен, а блок посчитан");
     viewProfit();
 
+    // 10) свой период фонда: задаём — используется, а расчёт его больше не двигает
+    S.mode = "date"; S.start = "2026-10-15"; S.end = "2026-10-22";   // период расчёта — 8 дней
+    S.trust = true; S.trustLevel = "0";
+    S.trustStart = "2026-01-05"; S.trustEnd = "2026-02-03";          // свой период — 30 дней
+    calcProfit();
+    if (R.error) errors.push("свой период: " + R.error);
+    else if (R.trust.days !== 30)
+      errors.push("свой период: ожидалось 30 дней, получено " + R.trust.days);
+    else if (R.trust.gross !== dec("1071"))
+      errors.push("свой период VIP1: доход " + fmt(R.trust.gross));
+    viewProfit();
+
+    // меняем период расчёта — свой период фонда не должен съезжать
+    S.start = "2026-03-01"; S.end = "2026-03-05";
+    calcProfit();
+    if (R.error) errors.push("свой период + смена расчёта: " + R.error);
+    else if (R.trust.days !== 30)
+      errors.push("свой период съехал после смены расчёта: " + R.trust.days);
+    viewProfit();
+
+    // кнопка «К периоду расчёта» — снова следуем за расчётом (5 дней)
+    clearTrustPeriod();
+    calcProfit();
+    if (R.error) errors.push("сброс периода: " + R.error);
+    else if (R.trust.days !== 5)
+      errors.push("после «К периоду расчёта»: ожидалось 5 дней, получено " + R.trust.days);
+    viewProfit();
+
     // 9) таблица по дням: в Пт/Сб сигналов меньше, чем в будни (правило программы)
     S.level = "C6"; S.x = "0"; S.vip = false; S.l1 = false;
+    S.start = "2026-10-15"; S.end = "2026-10-22";   // возвращаем октябрьский период
     calcProfit();
     const dFri = R.profit.days.find(d => iso(d.date) === "2026-10-16");   // пятница
     const dMon = R.profit.days.find(d => iso(d.date) === "2026-10-19");   // понедельник
