@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5ff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0b1d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="С8 Расчеты">
+<link rel="icon" href="icon-32.png" sizes="32x32">
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>С8 Расчеты</title>
+<style>
+  :root{
+    --bg:#f2f2f7; --card:#fff; --text:#1c1c1e; --muted:#6b7280;
+    --accent:#0a84ff; --green:#1a9c4b; --red:#d70015; --line:#e2e2e8;
+    --chip:#e9e9ee; --chip-on:#0a84ff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000; --card:#1c1c1e; --text:#f2f2f7; --muted:#98989d;
+           --line:#38383a; --chip:#2c2c2e; --green:#30d158; --red:#ff453a; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;
+       padding: calc(16px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+                calc(64px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
+  h1{font-size:26px;margin:8px 0 14px}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.04em;
+     color:var(--muted);margin:22px 4px 8px;font-weight:600}
+  nav{display:flex;gap:6px;overflow:auto;padding-bottom:4px;margin-bottom:6px}
+  nav button{flex:1 0 auto;padding:9px 14px;border:0;border-radius:10px;
+       background:var(--chip);color:var(--text);font-size:14px;font-weight:600;cursor:pointer}
+  nav button.on{background:var(--accent);color:#fff}
+  .card{background:var(--card);border-radius:14px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 16px;
+       border-bottom:1px solid var(--line);min-height:48px}
+  .row:last-child{border-bottom:0}
+  .row .t{flex:1;min-width:0}
+  .row .v{font-weight:500;white-space:nowrap;text-align:right}
+  .row .v.green{color:var(--green);font-weight:700}
+  .row .v.muted{color:var(--muted);font-weight:400}
+  input[type=text],input[type=date],select{
+      flex:0 0 auto;width:130px;padding:7px 9px;border:1px solid var(--line);
+      border-radius:9px;background:transparent;color:var(--text);font-size:15px;
+      text-align:right;font-variant-numeric:tabular-nums}
+  input[type=date]{width:auto;text-align:left}
+  select{width:auto;text-align:left;padding-right:6px}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  .seg{display:flex;gap:6px;padding:12px 16px;flex-wrap:wrap}
+  .seg button{flex:1;padding:9px 8px;border:0;border-radius:9px;background:var(--chip);
+       color:var(--text);font-size:14px;font-weight:600;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#fff}
+  /* выключатель */
+  .sw{appearance:none;width:51px;height:31px;border-radius:16px;background:var(--line);
+      position:relative;cursor:pointer;transition:background .18s;flex:0 0 auto}
+  .sw:checked{background:var(--green)}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;
+      border-radius:50%;background:#fff;transition:transform .18s;
+      box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .sw:checked::after{transform:translateX(20px)}
+  button.go{display:block;width:100%;margin:18px 0 0;padding:14px;border:0;
+      border-radius:13px;background:var(--accent);color:#fff;font-size:16px;
+      font-weight:600;cursor:pointer}
+  button.go:active{filter:brightness(.92)}
+  .err{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);
+       border-radius:12px;padding:12px 16px;margin-top:14px;font-size:14px;font-weight:500}
+  .hint{color:var(--muted);font-size:13px;padding:10px 16px;line-height:1.4}
+  .hide{display:none}
+  .day{padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px}
+  .day:last-child{border-bottom:0}
+  .day .l1{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .day .d{font-weight:600}
+  .day .lvl{font-size:11px;padding:2px 7px;border-radius:99px;
+       background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-weight:600}
+  .day .bal{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums}
+  .day .l2{color:var(--muted)}
+  .link{cursor:pointer}
+  .link .t{font-weight:600}
+  .link .s{color:var(--muted);font-size:13px}
+  .chev{color:var(--muted);font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:9px 16px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td:not(:first-child),th:not(:first-child){text-align:right;
+       font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  .pass{color:var(--green);font-weight:600}
+  .fail{color:var(--red);font-weight:600}
+  code{background:var(--chip);padding:2px 6px;border-radius:6px;font-size:13px}
+</style>
+<style>
+  /* ===================== КРАСОЧНАЯ ТЕМА (перекрывает базовую) ===================== */
+  body{
+    background:
+      radial-gradient(1200px 600px at 8% -12%, #dcd6ff 0%, transparent 60%),
+      radial-gradient(1000px 520px at 102% 0%, #ffe0f0 0%, transparent 55%),
+      radial-gradient(900px 620px at 50% 112%, #d6f5ff 0%, transparent 62%),
+      linear-gradient(180deg,#f5f5ff,#eef7ff);
+    background-attachment:fixed;
+    color:var(--ink);
+  }
+  h1{
+    font-size:31px;font-weight:800;letter-spacing:-.02em;margin:14px 0 2px;
+    background:linear-gradient(135deg,#6d4bff,#b84bff 58%,#ff5fa2);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{color:var(--muted);font-size:13.5px;margin:0 4px 16px}
+  h2{display:flex;align-items:center;gap:9px;color:var(--ink);font-size:12px;letter-spacing:.08em}
+  h2::before{content:"";width:6px;height:15px;border-radius:99px;
+    background:linear-gradient(180deg,#7b5cff,#ff5fa2);flex:0 0 auto}
+
+  nav{gap:8px;margin-bottom:4px}
+  nav button{background:rgba(255,255,255,.78);box-shadow:0 2px 10px rgba(70,50,140,.10);
+    border-radius:12px;transition:transform .15s,box-shadow .2s}
+  nav button:hover{transform:translateY(-1px)}
+  nav button.on{background:linear-gradient(135deg,#7b5cff,#b06bff);color:#fff;
+    box-shadow:0 7px 20px rgba(123,92,255,.45)}
+
+  .card{background:#fff;border-radius:18px;box-shadow:0 8px 26px rgba(60,40,120,.11);
+    border:1px solid rgba(255,255,255,.75)}
+  .row{border-bottom-color:#f1f1f8}
+
+  input[type=text],input[type=date],select{
+    background:#f6f6fc;border:1.5px solid #e7e7f3;border-radius:11px;font-weight:600}
+  input:focus,select:focus{border-color:#8b6bff;outline:none;
+    box-shadow:0 0 0 3px rgba(139,107,255,.18)}
+
+  .seg button{background:#f2f2fa;border-radius:11px;transition:transform .15s,box-shadow .2s}
+  .seg button:hover{transform:translateY(-1px)}
+  .seg button.on{background:linear-gradient(135deg,#7b5cff,#b06bff);
+    box-shadow:0 5px 16px rgba(123,92,255,.40)}
+
+  button.go{background:linear-gradient(135deg,#6d4bff,#b84bff 55%,#ff5fa2);
+    border-radius:15px;box-shadow:0 10px 26px rgba(120,70,220,.32);
+    transition:transform .15s,box-shadow .2s}
+  button.go:hover{transform:translateY(-2px);box-shadow:0 15px 32px rgba(120,70,220,.42)}
+  button.go.secondary{background:#f1f1fa;color:var(--ink);box-shadow:none;font-weight:600}
+  button.go.secondary:hover{transform:none;box-shadow:0 6px 18px rgba(60,40,120,.12)}
+
+  /* плитки разделов на главной */
+  .tile{flex:0 0 auto;width:48px;height:48px;border-radius:15px;
+    display:flex;align-items:center;justify-content:center;font-size:23px;
+    box-shadow:0 7px 18px rgba(60,40,120,.24)}
+  .c-blue{background:linear-gradient(135deg,#3b82f6,#06b6d4)}
+  .c-green{background:linear-gradient(135deg,#10b981,#84cc16)}
+  .c-amber{background:linear-gradient(135deg,#f59e0b,#fb7185)}
+  .c-violet{background:linear-gradient(135deg,#8b5cf6,#6366f1)}
+  .home .row{padding:15px 16px}
+  .link .t{font-weight:800;font-size:16px}
+  .link .s{font-size:13px;line-height:1.35}
+  .chev{font-size:23px;color:#b9b3e0}
+
+  .sw{background:#dcdcf0}
+  .sw:checked{background:linear-gradient(135deg,#10b981,#34d399)}
+
+  /* строка «Чистая прибыль» подсвечивается */
+  .row:has(> .v.green){background:linear-gradient(135deg,#e9fff6,#f3fffa);
+    border-bottom:0;border-radius:13px;margin:6px 8px}
+  .v{font-variant-numeric:tabular-nums}
+  .v.green{color:#0f9d58;font-weight:800}
+
+  .lvl{background:linear-gradient(135deg,#7b5cff,#b06bff)!important;
+    color:#fff!important;font-weight:700}
+  .day{border-bottom-color:#f1f1f8}
+  table th{background:#faf9ff}
+
+  .err{background:linear-gradient(135deg,#ffe9ee,#fff3f6);color:#c2185b;
+    border:1px solid #ffd2de;border-radius:15px}
+
+  /* крупный итог и таблицы */
+  .total-card{padding:18px 16px;text-align:center;margin-top:18px}
+  .lbl{color:var(--muted);font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:700}
+  .total{font-size:32px;font-weight:800;letter-spacing:-.02em;margin-top:4px;
+    background:linear-gradient(135deg,#10b981,#0ea5e9);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  table{font-size:13.5px}
+  th,td{padding:9px 11px}
+
+  /* день недели и мелкие кнопки */
+  .wd{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.02em}
+  button.mini{padding:7px 13px;border:0;border-radius:10px;background:#eef0ff;
+    color:#4b3bff;font-size:13px;font-weight:600;cursor:pointer}
+  button.mini:hover{background:#e4e7ff}
+  @media (prefers-color-scheme: dark){
+    button.mini{background:rgba(255,255,255,.1);color:#c7bdff}
+    button.mini:hover{background:rgba(255,255,255,.16)}
+  }
+
+  @media (prefers-color-scheme: dark){
+    body{
+      background:
+        radial-gradient(1200px 600px at 8% -12%, #2a1e5c 0%, transparent 60%),
+        radial-gradient(1000px 520px at 102% 0%, #4a1440 0%, transparent 55%),
+        linear-gradient(180deg,#0d0b1d,#101528);
+      background-attachment:fixed;color:#eef0ff;
+    }
+    h1{background:linear-gradient(135deg,#a78bfa,#e879f9 58%,#fb7185);
+      -webkit-background-clip:text;background-clip:text;color:transparent}
+    h2{color:#e8e8ff}
+    nav button{background:rgba(255,255,255,.08);box-shadow:none}
+    .card{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);box-shadow:none}
+    .row{border-bottom-color:rgba(255,255,255,.08)}
+    input[type=text],input[type=date],select{background:rgba(255,255,255,.07);
+      border-color:rgba(255,255,255,.15)}
+    .seg button{background:rgba(255,255,255,.08)}
+    button.go.secondary{background:rgba(255,255,255,.09);color:#eef0ff}
+    .row:has(> .v.green){background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(16,185,129,.07))}
+    .v.green{color:#4ade80}
+    .day{border-bottom-color:rgba(255,255,255,.08)}
+    table th{background:rgba(255,255,255,.05)}
+    .err{background:linear-gradient(135deg,rgba(255,60,90,.18),rgba(255,60,90,.08));
+      border-color:rgba(255,90,120,.3);color:#ff9db2}
+    .sw{background:rgba(255,255,255,.16)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>С8 Расчеты</h1>
+  <div class="sub">Дивиденды и прогноз прибыли по партнёрской программе</div>
+  <nav id="nav"></nav>
+  <div id="view"></div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   ДЕСЯТИЧНАЯ АРИФМЕТИКА НА BigInt
+   Обычный JS-float даёт 320 * 0.7 = 224.00000000000003, поэтому все деньги
+   хранятся как BigInt в масштабе 1e-8 — точно так же, как Decimal в Swift.
+   ========================================================================= */
+const SCALE = 100000000n;                       // 1e8
+const ZERO  = 0n;
+
+function dec(s){                                 // "1 234,5" -> BigInt
+  if (s === null || s === undefined) return null;
+  let t = String(s).trim().replace(/[\s\u00A0]/g, "").replace(",", ".");
+  if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(t)) return null;
+  const neg = t.startsWith("-");
+  if (neg) t = t.slice(1);
+  const [i, f = ""] = t.split(".");
+  const frac = (f + "00000000").slice(0, 8);
+  const v = BigInt(i === "" ? "0" : i) * SCALE + BigInt(frac);
+  return neg ? -v : v;
+}
+function fmt(v, opts){                           // BigInt -> "1 234,56"
+  const neg = v < ZERO;
+  const a = neg ? -v : v;
+  const int = a / SCALE;
+  let frac = (a % SCALE).toString().padStart(8, "0").replace(/0+$/, "");
+  if (opts && opts.fixed2) frac = (a % SCALE).toString().padStart(8, "0").slice(0, 2).replace(/0+$/, "");
+  const grp = int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return (neg ? "-" : "") + grp + (frac ? "," + frac : "");
+}
+const add  = (a, b) => a + b;
+const sub  = (a, b) => a - b;
+const mul  = (a, b) => (a * b) / SCALE;          // масштаб × масштаб
+const mulI = (a, n) => a * BigInt(n);            // масштаб × целое
+
+/** Округление a/b до 8 знаков (HALF_UP) — конвертация ₽ -> USDT */
+function divRound8(a, b){
+  return (2n * a * SCALE + b) / (2n * b);
+}
+/** Целое «вверх» — как RoundingMode.CEILING в оригинале */
+function ceilDiv(a, b){
+  if (a >= ZERO) return (a + b - 1n) / b;
+  return -((-a) / b);
+}
+function coerce(v, min, max){ return v < min ? min : (v > max ? max : v); }
+
+/* =========================================================================
+   ДАННЫЕ: уровни (эталон — декомпилированный LevelConfiguration)
+   ========================================================================= */
+const LEVELS = [
+  { key:"C1", deposit: 300,   ip:"2.4", base:2, fri:1, sat:1 },
+  { key:"C2", deposit: 700,   ip:"5.6", base:2, fri:1, sat:1 },
+  { key:"C3", deposit: 1500,  ip:"12",  base:3, fri:1, sat:1 },
+  { key:"C4", deposit: 3000,  ip:"24",  base:3, fri:1, sat:1 },
+  { key:"C5", deposit: 6000,  ip:"48",  base:4, fri:1, sat:1 },
+  { key:"C6", deposit: 10000, ip:"80",  base:4, fri:1, sat:1 }
+];
+LEVELS.forEach(l => { l.dep = dec(String(l.deposit)); l.inc = dec(l.ip); });
+
+const DIV_RATE = dec("0.02");
+const DIV_BASE = { C2:"11.2", C3:"24", C4:"48", C5:"96", C6:"160" };
+const WITHHOLD = dec("0.30");
+const NET_RATE = dec("0.70");
+const MAX_DAYS = 36500;
+
+/* =========================================================================
+   ДВИЖОК РАСЧЁТОВ
+   ========================================================================= */
+function signalCount(i, wd, x, vip, l1){
+  const c = LEVELS[i];
+  if (wd === 5) return c.fri + (l1 >= 10 ? 1 : 0);   // Пятница
+  if (wd === 6) return c.sat + (l1 >= 10 ? 1 : 0);   // Суббота
+  return c.base + x + (vip ? 1 : 0);
+}
+function daily(i, wd, prev, x, vip, l1){
+  const sn = signalCount(i, wd, x, vip, l1);
+  const income = mulI(LEVELS[i].inc, sn);
+  return { signals: sn, incomePerSignal: LEVELS[i].inc, dailyIncome: income, balanceAfter: add(prev, income) };
+}
+function resolveLevel(cur, balanceAfter, auto){
+  if (!auto) return cur;
+  let best = -1;
+  for (let i = 0; i < LEVELS.length; i++) if (balanceAfter >= LEVELS[i].dep) best = i;
+  return best > cur ? best : cur;
+}
+function dividends(days, counts){
+  const out = [];
+  let total = ZERO;
+  for (const [lvl, baseStr] of Object.entries(DIV_BASE)){
+    const n = counts[lvl] || 0;
+    const amount = mulI(mulI(mul(dec(baseStr), DIV_RATE), days), n);
+    out.push({ level: lvl, participants: n, base: dec(baseStr), amount });
+    total = add(total, amount);
+  }
+  return { levels: out, total };
+}
+/* =========================================================================
+   ТРАСТОВЫЙ ФОНД (доверительное управление)
+   Фиксированная сумма на срок, ежедневная прибыль 365 дней в году,
+   вывод с комиссией 30%, тело возвращается в конце срока.
+   ВАЖНО: уровни VIP Траст НЕ имеют отношения к VIP Групп (та даёт +1 сигнал).
+   ========================================================================= */
+const TRUST_WITHHOLD = dec("0.30");
+const TRUST_LEVELS = [
+  { key:"VIP1", sum:"1000",  perDay:"35.7" },
+  { key:"VIP2", sum:"3000",  perDay:"120"  },
+  { key:"VIP3", sum:"5000",  perDay:"217"  },
+  { key:"VIP4", sum:"10000", perDay:"500"  }
+];
+TRUST_LEVELS.forEach(l => { l.sumD = dec(l.sum); l.perDayD = dec(l.perDay); });
+
+/** Расчёт фонда за календарный период; дни считаются включительно */
+function trustFund(levelIdx, start, end){
+  const lvl = TRUST_LEVELS[levelIdx];
+  if (!lvl) throw new Error("Неизвестный уровень трастового фонда");
+  const days = diffDays(start, end) + 1;
+  if (days < 1) throw new Error("Дата окончания не может быть раньше даты начала");
+  const gross = mulI(lvl.perDayD, days);
+  const withholding = mul(gross, TRUST_WITHHOLD);
+  return { level: lvl.key, sum: lvl.sumD, perDay: lvl.perDayD, days,
+           gross, withholding, net: mul(gross, NET_RATE) };
+}
+
+/** Симуляция на N дней */
+function simulate(start, nDays, lvl, balance, auto, x, vip, l1){
+  if (nDays < 0) throw new Error("Number of days must be non-negative");
+  if (balance < ZERO) throw new Error("Starting balance must be non-negative");
+  const days = [];
+  let level = lvl, bal = balance;
+  for (let i = 0; i < nDays; i++){
+    const d = addDays(start, i);
+    const r = daily(level, d.getDay(), bal, x, vip, l1);
+    const next = resolveLevel(level, r.balanceAfter, auto);
+    days.push({ date: d, level, deposit: LEVELS[level].dep, signals: r.signals,
+                inc: r.incomePerSignal, income: r.dailyIncome, balance: r.balanceAfter, after: next });
+    bal = r.balanceAfter; level = next;
+  }
+  const dep = LEVELS[level].dep;
+  const gross = sub(bal, dep);
+  return { days, finalBalance: bal, finalLevel: level, deposit: dep, gross,
+           withholding: mul(gross, WITHHOLD), net: mul(gross, NET_RATE) };
+}
+/** Расчёт до целевого баланса */
+function targetBalance(start, lvl, balance, target, auto, x, vip, l1){
+  if (balance < ZERO)  throw new Error("Starting balance must be non-negative");
+  if (target  < ZERO)  throw new Error("Target balance must be non-negative");
+  if (x < 0 || l1 < 0) throw new Error("X must be non-negative");
+
+  const days = [];
+  let level = lvl, bal = balance, date = start;
+  while (bal < target){
+    if (days.length >= MAX_DAYS) throw new Error("Target balance was not reached within 36500 days");
+    const r = daily(level, date.getDay(), bal, x, vip, l1);
+    const next = resolveLevel(level, r.balanceAfter, auto);
+    days.push({ date, level, deposit: LEVELS[level].dep, signals: r.signals,
+                inc: r.incomePerSignal, income: r.dailyIncome, balance: r.balanceAfter, after: next });
+    bal = r.balanceAfter;
+    if (bal < target) date = addDays(date, 1);
+    level = next;
+  }
+  // последний день частичный: сколько сигналов реально нужно
+  let lastSignals = 0;
+  if (days.length){
+    const last = days[days.length - 1];
+    const before = sub(last.balance, last.income);
+    const need = ceilDiv(sub(target, before), last.inc);
+    lastSignals = Number(coerce(need, 1n, BigInt(last.signals)));
+  }
+  let finalBalance = bal;
+  if (days.length){
+    const last = days[days.length - 1];
+    finalBalance = add(sub(last.balance, last.income), mulI(last.inc, lastSignals));
+  }
+  const dep = LEVELS[level].dep;
+  const gross = sub(finalBalance, dep);
+
+  let totalSignals = lastSignals, totalIncome = ZERO;
+  if (days.length){
+    for (let i = 0; i < days.length - 1; i++){ totalSignals += days[i].signals; totalIncome = add(totalIncome, days[i].income); }
+    totalIncome = add(totalIncome, mulI(days[days.length - 1].inc, lastSignals));
+  }
+  return { date: days.length ? days[days.length - 1].date : start, daysCount: days.length,
+           lastSignals, totalSignals, totalIncome, finalBalance, finalLevel: level, deposit: dep,
+           gross, withholding: mul(gross, WITHHOLD), net: mul(gross, NET_RATE), days };
+}
+/** Расчёт до целевой чистой прибыли */
+function targetProfit(start, lvl, balance, target, auto, x, vip, l1){
+  if (balance < ZERO)  throw new Error("Starting balance must be non-negative");
+  if (target  < ZERO)  throw new Error("Target net profit must be non-negative");
+  if (x < 0 || l1 < 0) throw new Error("X must be non-negative");
+
+  const np = (bal, lv) => mul(sub(bal, LEVELS[lv].dep), NET_RATE);
+
+  const days = [];
+  let level = lvl, bal = balance, date = start;
+
+  if (np(bal, level) >= target){                 // цель уже достигнута
+    const dep = LEVELS[level].dep, g = sub(bal, dep);
+    return { date, daysCount: 0, lastSignals: 0, totalSignals: 0, totalIncome: ZERO,
+             finalBalance: bal, finalLevel: level, deposit: dep, gross: g,
+             withholding: mul(g, WITHHOLD), net: mul(g, NET_RATE), days: [] };
+  }
+
+  while (days.length < MAX_DAYS){
+    const r = daily(level, date.getDay(), bal, x, vip, l1);
+    const next = resolveLevel(level, r.balanceAfter, auto);
+
+    if (r.signals >= 1){
+      for (let i = 1; i <= r.signals; i++){
+        const nb = add(bal, r.incomePerSignal);
+        const lv = (i === r.signals) ? next : level;
+        if (np(nb, lv) < target){
+          if (i === r.signals) break;
+          bal = nb; continue;
+        }
+        const dep = LEVELS[lv].dep, g = sub(nb, dep);
+        const dayEntry = { date, level, deposit: LEVELS[level].dep, signals: i,
+                           inc: r.incomePerSignal, income: mulI(r.incomePerSignal, i),
+                           balance: nb, after: lv };
+        const prevSignals = days.reduce((s, d) => s + d.signals, 0);
+        const prevIncome  = days.reduce((s, d) => add(s, d.income), ZERO);
+        return { date, daysCount: days.length + 1, lastSignals: i,
+                 totalSignals: prevSignals + i,
+                 totalIncome: add(prevIncome, mulI(r.incomePerSignal, i)),
+                 finalBalance: nb, finalLevel: lv, deposit: dep, gross: g,
+                 withholding: mul(g, WITHHOLD), net: mul(g, NET_RATE),
+                 days: days.concat([dayEntry]) };
+      }
+    }
+    days.push({ date, level, deposit: LEVELS[level].dep, signals: r.signals,
+                inc: r.incomePerSignal, income: r.dailyIncome, balance: r.balanceAfter, after: next });
+    bal = r.balanceAfter; date = addDays(date, 1); level = next;
+  }
+  throw new Error("Target net profit was not reached within 36500 days");
+}
+
+/* =========================================================================
+   ДАТЫ
+   ========================================================================= */
+function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n, 12); }
+function today(){ const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate(), 12); }
+/** Прибавить месяцы с прижимом к последнему дню месяца (31.10 + 6 мес) */
+function addMonths(d, n){
+  const y = d.getFullYear(), m = d.getMonth() + n, day = d.getDate();
+  const last = new Date(y, m + 1, 0).getDate();
+  return new Date(y, m, Math.min(day, last), 12);
+}
+function iso(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function parseDate(s){ const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d, 12); }
+function diffDays(a, b){
+  const A = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const B = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((B - A) / 86400000);
+}
+function fmtDate(d){
+  return d.toLocaleDateString("ru-RU", { day:"2-digit", month:"2-digit", year:"numeric" });
+}
+
+/* =========================================================================
+   СОСТОЯНИЕ (сохраняется в localStorage, как SharedPreferences в оригинале)
+   ========================================================================= */
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const S = {
+  tab: "home",
+  team: LS.get("c8.team", { C1:0, C2:0, C3:0, C4:0, C5:0, C6:0 }),
+  divDays: LS.get("c8.divDays", "30"),
+  mode: LS.get("c8.mode", "date"),
+  start: LS.get("c8.start", iso(today())),
+  end: LS.get("c8.end", iso(addDays(today(), 30))),
+  level: LS.get("c8.level", "C1"),
+  balance: LS.get("c8.balance", "300"),
+  targetBalance: LS.get("c8.targetBalance", "1000"),
+  targetProfit: LS.get("c8.targetProfit", "100"),
+  currency: LS.get("c8.currency", "USDT"),
+  x: LS.get("c8.x", "0"),
+  rate: LS.get("c8.rate", "80"),
+  l1: LS.get("c8.l1", false),
+  vip: LS.get("c8.vip", false),
+  auto: LS.get("c8.auto", true),
+  trust: LS.get("c8.trust", false),
+  trustLevel: LS.get("c8.trustLevel", "0")
+};
+function save(){
+  LS.set("c8.team", S.team); LS.set("c8.divDays", S.divDays);
+  LS.set("c8.mode", S.mode); LS.set("c8.start", S.start); LS.set("c8.end", S.end);
+  LS.set("c8.level", S.level); LS.set("c8.balance", S.balance);
+  LS.set("c8.targetBalance", S.targetBalance); LS.set("c8.targetProfit", S.targetProfit);
+  LS.set("c8.currency", S.currency); LS.set("c8.x", S.x); LS.set("c8.rate", S.rate);
+  LS.set("c8.l1", S.l1); LS.set("c8.vip", S.vip); LS.set("c8.auto", S.auto);
+  LS.set("c8.trust", S.trust); LS.set("c8.trustLevel", S.trustLevel);
+}
+
+/* =========================================================================
+   ИНТЕРФЕЙС
+   ========================================================================= */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+const TABS = [
+  { id:"home",     name:"Главная" },
+  { id:"dividend", name:"Дивиденды" },
+  { id:"profit",   name:"Прогноз" },
+  { id:"team",     name:"Команда" },
+  { id:"settings", name:"Настройки" }
+];
+const TITLES = { dividend:"Расчёт дивидендов", profit:"Прогноз прибыли", team:"Структура команды", settings:"Настройки" };
+
+let R = { div:null, profit:null, error:null };   // результаты текущего расчёта
+
+function renderNav(){
+  $("nav").innerHTML = TABS.map(t =>
+    `<button class="${S.tab===t.id?"on":""}" onclick="go('${t.id}')">${t.name}</button>`).join("");
+}
+function go(tab){ S.tab = tab; renderNav(); renderView(); window.scrollTo(0,0); }
+
+function row(label, value, cls){
+  return `<div class="row"><span class="t">${esc(label)}</span>
+          <span class="v ${cls||""}">${value}</span></div>`;
+}
+function seg(name, opts, cur, fn){
+  return `<div class="seg">` + opts.map(o =>
+    `<button class="${cur===o.v?"on":""}" onclick="${fn}('${o.v}')">${esc(o.t)}</button>`).join("") + `</div>`;
+}
+function sw(key, checked, handler){
+  const h = handler || `setP('${key}', this.checked)`;
+  return `<input type="checkbox" class="sw" ${checked?"checked":""} onchange="${h}">`;
+}
+function txt(key, val, wide){
+  return `<input type="text" inputmode="decimal" value="${esc(val)}" onchange="setP('${key}', this.value)"${wide?' style="width:auto;text-align:left"':""}>`;
+}
+
+function renderView(){
+  const v = $("view");
+  if (S.tab === "home")     v.innerHTML = viewHome();
+  if (S.tab === "team")     v.innerHTML = viewTeam();
+  if (S.tab === "dividend") v.innerHTML = viewDividend();
+  if (S.tab === "profit")   v.innerHTML = viewProfit();
+  if (S.tab === "settings") v.innerHTML = viewSettings();
+}
+
+/* ---------------------------- Главная ---------------------------- */
+function viewHome(){
+  const cards = [
+    { tab:"dividend", icon:"💰", title:"Дивиденды",         sub:"Расчёт по сохранённой структуре команды", cls:"c-blue"   },
+    { tab:"profit",   icon:"📈", title:"Прогноз прибыли",   sub:"По дате, балансу или чистой прибыли",     cls:"c-green"  },
+    { tab:"team",     icon:"👥", title:"Структура команды", sub:"Распознавание и корректировка состава",   cls:"c-amber"  },
+    { tab:"settings", icon:"⚙️", title:"Настройки",         sub:"Параметры и проверка расчётов",           cls:"c-violet" }
+  ];
+  return `<h2>Расчёты</h2>
+    <div class="hint" style="padding-left:4px">Выберите нужный раздел</div>
+    <div class="card home">
+      ${cards.map(c => `
+        <div class="row link" onclick="go('${c.tab}')">
+          <span class="tile ${c.cls}">${c.icon}</span>
+          <span class="t"><div class="t">${c.title}</div><div class="s">${c.sub}</div></span>
+          <span class="chev">›</span>
+        </div>`).join("")}
+    </div>`;
+}
+
+/* ---------------------------- Команда ---------------------------- */
+function viewTeam(){
+  const rows = LEVELS.map(l => `<div class="row">
+      <span class="t">${l.key}</span>
+      <input type="text" inputmode="numeric" value="${S.team[l.key]}"
+             onchange="setTeam('${l.key}', this.value)">
+    </div>`).join("");
+  return `<h2>Структура команды</h2>
+    <div class="card">
+      <div class="row"><span class="t"><b>Состав команды</b></span></div>
+      ${rows}
+    </div>
+    <div class="hint">При необходимости количество участников можно исправить вручную.</div>`;
+}
+function setTeam(k, v){
+  const n = Math.max(0, parseInt(String(v).replace(/\D/g,""), 10) || 0);
+  S.team[k] = n; save(); renderView();
+}
+
+/* --------------------------- Дивиденды --------------------------- */
+function viewDividend(){
+  const participants = LEVELS.reduce((s, l) => s + (S.team[l.key] || 0), 0);
+  let html = `<h2>Расчёт дивидендов</h2>
+    <div class="hint" style="padding-left:4px">Расчёт по сохранённой структуре команды</div>
+    <div class="card">
+      <div class="row"><span class="t">Количество дней</span>
+        <input type="text" inputmode="numeric" value="${esc(S.divDays)}"
+               onchange="setDivDays(this.value)"></div>
+      <div class="row"><span class="t">Команда</span>
+        <span class="v">${participants} участников</span></div>
+    </div>
+    <button class="go" onclick="calcDividend()">Рассчитать</button>`;
+
+  if (R.error && R.forTab === "dividend") html += `<div class="err">${esc(R.error)}</div>`;
+
+  if (R.div){
+    html += `<div class="card total-card">
+        <div class="lbl">Итого</div>
+        <div class="total">${fmt(R.div.total)} USDT</div>
+      </div>`;
+    html += `<h2>Расшифровка</h2>
+      <div class="card"><table>
+        <tr><th>Уровень</th><th>База</th><th>Дней</th><th>Участн.</th><th>Сумма</th></tr>
+        ${R.div.levels.map(l => `<tr>
+          <td>${l.level}</td>
+          <td>${fmt(l.base)}</td>
+          <td>${R.div.days}</td>
+          <td>${l.participants}</td>
+          <td>${fmt(l.amount)}</td>
+        </tr>`).join("")}
+      </table>
+      <div class="hint">Сумма = База × 0,02 × Дней × Участников. Уровень C1 в дивидендах не участвует.</div>
+      </div>`;
+    html += `<button class="go secondary" onclick="go('team')">Изменить структуру</button>`;
+  }
+  return html;
+}
+function setDivDays(v){ S.divDays = v; save(); renderView(); }
+function calcDividend(){
+  R = { forTab:"dividend" };
+  const days = parseInt(String(S.divDays).replace(/\D/g,""), 10);
+  if (!days || days <= 0){ R.error = "Проверьте количество дней"; renderView(); return; }
+  try { R.div = Object.assign(dividends(days, S.team), { days }); }
+  catch(e){ R.error = e.message; }
+  renderView();
+}
+
+/* ------------------------ Прогноз прибыли ------------------------ */
+function viewProfit(){
+  const modeOpts = [
+    { v:"date",    t:"До даты" },
+    { v:"balance", t:"До баланса" },
+    { v:"profit",  t:"До прибыли" }
+  ];
+  const sectionTitle = S.mode === "date" ? "Расчёт до даты"
+                     : S.mode === "balance" ? "Расчёт до баланса" : "Расчёт до чистой прибыли";
+
+  let modeField = "";
+  if (S.mode === "date"){
+    modeField = `<div class="row"><span class="t">Дата окончания</span>
+      <input type="date" value="${esc(S.end)}" onchange="setP('end', this.value)"></div>`;
+  } else if (S.mode === "balance"){
+    modeField = row("Целевой баланс, USDT", txt("targetBalance", S.targetBalance));
+  } else {
+    modeField = `<div class="seg">
+        <button class="${S.currency==="USDT"?"on":""}" onclick="setP('currency','USDT')">USDT</button>
+        <button class="${S.currency==="RUB"?"on":""}"  onclick="setP('currency','RUB')">RUB</button>
+      </div>` +
+      row(S.currency === "RUB" ? "Целевая чистая прибыль, ₽" : "Целевая чистая прибыль, USDT",
+          txt("targetProfit", S.targetProfit));
+  }
+
+  const levelOpts = LEVELS.map(l => `<option ${S.level===l.key?"selected":""}>${l.key}</option>`).join("");
+
+  let html = `<h2>Режим расчёта</h2>
+    ${seg("mode", modeOpts, S.mode, "setMode")}
+    <h2>${sectionTitle}</h2>
+    <div class="card">
+      <div class="row"><span class="t">Дата начала</span>
+        <input type="date" value="${esc(S.start)}" onchange="setP('start', this.value)"></div>
+      <div class="row"><span class="t">Текущий уровень</span>
+        <select onchange="setP('level', this.value)">${levelOpts}</select></div>
+      ${row("Текущий баланс, USDT", txt("balance", S.balance))}
+      ${modeField}
+      ${row("Кол-во лидерских сигналов", txt("x", S.x))}
+      ${row("Курс USDT, ₽", txt("rate", S.rate))}
+    </div>
+    <h2>Параметры</h2>
+    <div class="card">
+      ${row("L1 ≥ 10", sw("l1", S.l1))}
+      ${row("VIP Групп", sw("vip", S.vip))}
+      ${row("Автопереход уровней", sw("auto", S.auto))}
+    </div>
+
+    <h2>Трастовый фонд</h2>
+    <div class="card">
+      ${row("Участие в трастовом фонде", sw("trust", S.trust, "setTrust(this.checked)"))}
+      ${S.trust ? trustFields() : `<div class="hint">Отдельная механика: не связана
+        с уровнями C1–C6 и с VIP Групп. Прибыль ежедневная, 365 дней в году.</div>`}
+    </div>
+
+    <button class="go" onclick="calcProfit()">Рассчитать</button>`;
+
+  if (R.error && R.forTab === "profit") html += `<div class="err">${esc(R.error)}</div>`;
+
+  if (R.profit){
+    const p = R.profit, rate = R.rate;
+    html += `<h2>Результат</h2><div class="card">`;
+    if (p.kind === "sim"){
+      html += row("Дней", String(p.days.length));
+      html += row("Ожидаемый баланс", fmt(p.finalBalance) + " USDT");
+    } else {
+      html += row("Дата достижения", fmtDate(p.date));
+      html += row("После сигнала", String(p.lastSignals));
+      html += row("Календарных дней", String(p.daysCount));
+      html += row("Сигналов", String(p.totalSignals));
+      html += row("Доход за период", fmt(p.totalIncome) + " USDT");
+      html += row("Достигнутый баланс", fmt(p.finalBalance) + " USDT");
+    }
+    html += row("Итоговый уровень", p.finalLevel.key);
+    html += row("Депозит уровня", fmt(p.deposit) + " USDT");
+    html += row("Прибыль до удержания", fmt(p.gross) + " USDT");
+    html += row("Комиссия 30%", fmt(p.withholding) + " USDT");
+    html += row("Чистая прибыль", fmt(p.net) + " USDT", "green");
+    html += row("Чистая прибыль, ₽", fmt(mul(p.net, rate)) + " ₽");
+    html += `</div>`;
+
+    // --- блок трастового фонда + итог ---
+    if (R.trust){
+      const t = R.trust;
+      const signalDays = p.kind === "sim" ? p.days.length : p.daysCount;
+      html += `<h2>Трастовый фонд</h2><div class="card">
+        ${row("Уровень", t.level)}
+        ${row("Сумма в управлении", fmt(t.sum) + " $")}
+        ${row("Прибыль в день", fmt(t.perDay) + " $")}
+        ${row("Дней в периоде", String(t.days))}
+        ${row("Доход за период", fmt(t.gross) + " $")}
+        ${row("Комиссия 30%", fmt(t.withholding) + " $")}
+        ${row("Чистыми по фонду", fmt(t.net) + " $", "green")}
+        ${row("Чистыми по фонду, ₽", fmt(mul(t.net, rate)) + " ₽")}
+        ${row("Возврат тела в конце срока", fmt(t.sum) + " $", "muted")}
+      </div>`;
+      html += `<h2>Итого с фондом</h2><div class="card">
+        ${row("Чистая прибыль по сигналам", fmt(p.net) + " USDT")}
+        ${row("Чистая прибыль фонда", fmt(t.net) + " $")}
+        ${row("Итого с фондом", fmt(add(p.net, t.net)) + " $", "green")}
+        ${row("Итого с фондом, ₽", fmt(mul(add(p.net, t.net), rate)) + " ₽")}
+      </div>
+      <div class="hint">Курс: ${fmt(rate)} ₽ за $; USDT принят 1:1 с $. Периоды разные:
+        сигналы — ${signalDays} дн., фонд — ${t.days} дн.</div>`;
+    }
+
+    html += daysTable(p.days);
+  }
+  return html;
+}
+function daysTable(days){
+  if (!days.length) return "";
+  const show = R.expanded ? days : days.slice(0, 10);
+  const WD = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+  let html = `<h2>Расчёт по дням (${days.length})</h2><div class="card">`;
+  html += `<div class="hint">В пятницу и субботу сигнал один — так задано правилами программы.</div>`;
+  html += show.map(d => `<div class="day">
+      <div class="l1"><span class="d">${fmtDate(d.date)}</span>
+        <span class="wd">${WD[d.date.getDay()]}</span>
+        <span class="lvl">${LEVELS[d.level].key}</span>
+        <span class="bal">${fmt(d.balance)}</span></div>
+      <div class="l2">Сигналов: ${d.signals} · Доход: ${fmt(d.income)}</div>
+    </div>`).join("");
+  html += `</div>`;
+  if (days.length > 10){
+    html += `<button class="go secondary"
+      onclick="toggleDays()">${R.expanded ? "Скрыть подробный расчёт" : "Показать все дни"}</button>`;
+  }
+  return html;
+}
+function toggleDays(){ R.expanded = !R.expanded; renderView(); }
+function setMode(m){ S.mode = m; save(); R = {}; renderView(); }
+
+/** Поля трастового фонда: уровень + выводимый период (задать его нельзя) */
+function trustFields(){
+  const opts = TRUST_LEVELS.map((l, i) =>
+    `<option value="${i}" ${Number(S.trustLevel) === i ? "selected" : ""}>${l.key} · ${l.sum} $</option>`).join("");
+  const i = Number(S.trustLevel) || 0;
+  const lvl = TRUST_LEVELS[i];
+  const p = trustPeriod();
+  const derived = S.mode === "date"
+    ? "Период фонда совпадает с периодом расчёта."
+    : "В этом режиме периода нет — берём 6 месяцев от даты начала (срок по правилам).";
+  return `
+    <div class="row"><span class="t">Уровень (VIP Траст)</span>
+      <select onchange="setP('trustLevel', this.value)">${opts}</select></div>
+    ${row("Прибыль в день", fmt(lvl.perDayD) + " $", "muted")}
+    ${row("Период", fmtDate(p.from) + " — " + fmtDate(p.to), "muted")}
+    ${row("Дней в периоде", String(p.days), "muted")}
+    <div class="hint">${derived} Тело возвращается в конце срока, дни считаются включительно.</div>`;
+}
+function setP(key, val){ S[key] = val; save(); R = {}; renderView(); }
+function setTrust(on){ S.trust = on; save(); R = {}; renderView(); }
+
+/** Период фонда ВСЕГДА выводится из периода расчёта.
+    Отдельных полей нет намеренно: иначе легко получить молчаливые 6 месяцев
+    вместо выбранного периода (на этом уже спотыкались). */
+function trustPeriod(){
+  const from = parseDate(S.start);
+  const to = (S.mode === "date") ? parseDate(S.end) : addMonths(from, 6);
+  return { from, to, days: diffDays(from, to) + 1 };
+}
+
+function calcProfit(){
+  R = { forTab:"profit" };
+  const rate = dec(S.rate);
+  if (rate === null || rate === undefined){ R.error = "Проверьте числовые поля"; return renderView(); }
+  if (rate <= ZERO){ R.error = "Курс USDT должен быть больше 0"; return renderView(); }
+
+  const balance = dec(S.balance);
+  if (balance === null){ R.error = "Проверьте числовые поля"; return renderView(); }
+  if (balance < ZERO){ R.error = "Текущий баланс не может быть отрицательным"; return renderView(); }
+
+  const x = Math.max(0, parseInt(String(S.x).replace(/\D/g,""), 10) || 0);
+  const l1 = S.l1 ? 10 : 0;
+  const lvl = LEVELS.findIndex(l => l.key === S.level);
+  const start = parseDate(S.start);
+  R.rate = rate;
+
+  try {
+    // Трастовый фонд — отдельная механика; считаем внутри try, чтобы ошибка
+    // в датах показывалась пользователю, а не роняла страницу
+    if (S.trust){
+      const p = trustPeriod();
+      R.trust = trustFund(Number(S.trustLevel) || 0, p.from, p.to);
+    }
+
+    if (S.mode === "date"){
+      const days = diffDays(start, parseDate(S.end)) + 1;
+      if (days < 1){ R.error = "Дата окончания не может быть раньше даты начала"; return renderView(); }
+      const r = simulate(start, days, lvl, balance, S.auto, x, S.vip, l1);
+      R.profit = Object.assign({ kind:"sim" }, r);
+    } else if (S.mode === "balance"){
+      const target = dec(S.targetBalance);
+      if (target === null){ R.error = "Проверьте числовые поля"; return renderView(); }
+      if (target < ZERO){ R.error = "Целевой баланс не может быть отрицательным"; return renderView(); }
+      const r = targetBalance(start, lvl, balance, target, S.auto, x, S.vip, l1);
+      R.profit = Object.assign({ kind:"target" }, r);
+    } else {
+      let target = dec(S.targetProfit);
+      if (target === null){ R.error = "Проверьте числовые поля"; return renderView(); }
+      if (target < ZERO){ R.error = "Целевая чистая прибыль не может быть отрицательной"; return renderView(); }
+      if (S.currency === "RUB") target = divRound8(target, rate);   // ₽ -> USDT
+      const r = targetProfit(start, lvl, balance, target, S.auto, x, S.vip, l1);
+      R.profit = Object.assign({ kind:"target" }, r);
+    }
+    // finalLevel приходит индексом — приводим к объекту уровня
+    R.profit.finalLevel = LEVELS[R.profit.finalLevel];
+  } catch(e){ R.error = e.message; }
+  renderView();
+}
+
+/* --------------------------- Настройки --------------------------- */
+function viewSettings(){
+  const rows = LEVELS.map(l => `<tr><td>${l.key}</td><td>${l.deposit}</td>
+      <td>${l.ip}</td><td>${l.base}</td><td>${l.fri}</td><td>${l.sat}</td></tr>`).join("");
+  const t = runSelfTests();
+  return `<h2>Справочник уровней</h2>
+    <div class="card"><table>
+      <tr><th>Уровень</th><th>Депозит</th><th>Доход/сигнал</th><th>Base</th><th>Пт</th><th>Сб</th></tr>
+      ${rows}
+    </table></div>
+    <h2>Данные</h2>
+    <div class="card">
+      ${row("Состав команды", LEVELS.map(l => `${l.key}: ${S.team[l.key]}`).join(" · "))}
+    </div>
+    <button class="go secondary" onclick="resetTeam()">Сбросить состав команды</button>
+    <h2>Проверка расчётов</h2>
+    <div class="card">
+      ${row("Утверждений пройдено", t.passed + " из " + t.total, t.failed ? "fail" : "pass")}
+      ${t.failed ? t.failures.map(f => row("✗ " + f, "", "fail")).join("") : row("Статус", "Все расчёты совпадают с эталоном", "green")}
+    </div>
+    <div class="hint">55 утверждений по математике + прогон отрисовки всех экранов и режимов.
+      Те же формулы, что в iOS-порте и декомпилированном оригинале.
+      Запуск из терминала: <code>node tools/C8Calculations-web/selftest.mjs</code></div>`;
+}
+function resetTeam(){
+  if (!confirm("Сбросить состав команды?")) return;
+  S.team = { C1:0, C2:0, C3:0, C4:0, C5:0, C6:0 };
+  save(); renderView();
+}
+
+/* =========================================================================
+   САМОПРОВЕРКА — те же утверждения, что в tools/c8-ios-verify/main.swift
+   ========================================================================= */
+function runSelfTests(){
+  const res = { passed:0, failed:0, failures:[] };
+  const ok = (cond, label) => { if (cond) res.passed++; else { res.failed++; res.failures.push(label); } };
+  const D = dec;
+
+  // A. Точность
+  ok(D("2.4") === 240000000n, "dec(2.4)");
+  ok(D("0.02") !== null && mul(D("11.2"), D("0.02")) === D("0.224"), "11.2 × 0.02 = 0.224 точно");
+  ok(320n * 1n * 0n === 0n && mul(D("320"), D("0.7")) === D("224"), "320 × 0.7 = 224 (без float-мусора)");
+
+  // B. Уровни
+  ok(LEVELS.map(l => l.deposit).join() === "300,700,1500,3000,6000,10000", "депозиты C1–C6");
+  ok(LEVELS[0].inc === D("2.4") && LEVELS[5].inc === D("80"), "доход/сигнал C1 и C6");
+
+  // C. Сигналы
+  ok(signalCount(0,1,0,false,0) === 2, "Пн C1 → 2");
+  ok(signalCount(0,1,3,true,0) === 6, "Пн C1 x=3 VIP → 6");
+  ok(signalCount(0,5,0,false,0) === 1, "Пт C1 → 1");
+  ok(signalCount(0,5,0,false,10) === 2, "Пт C1 L1≥10 → 2");
+  ok(signalCount(0,6,0,false,10) === 2, "Сб C1 L1≥10 → 2");
+  ok(signalCount(2,3,0,false,0) === 3, "Ср C3 → 3");
+  ok(signalCount(0,5,5,true,0) === 1, "Пт не зависит от X/VIP");
+
+  // D. Дневной расчёт
+  const d1 = daily(0, 1, D("300"), 0, false, 0);
+  ok(d1.signals === 2 && d1.dailyIncome === D("4.8") && d1.balanceAfter === D("304.8"), "Пн C1 300 → 304.8");
+
+  // E. Апгрейд
+  ok(resolveLevel(0, D("304.8"), true) === 0, "304.8 → C1");
+  ok(resolveLevel(0, D("700"), true) === 1, "700 → C2");
+  ok(resolveLevel(0, D("699.99"), true) === 0, "699.99 → C1");
+  ok(resolveLevel(0, D("10000"), true) === 5, "10000 → C6");
+  ok(resolveLevel(1, D("700"), false) === 1, "автопереход выкл");
+  ok(resolveLevel(2, D("4000"), true) === 3, "4000 → C4");
+
+  // F. Дивиденды
+  const dv = dividends(30, { C1:5, C2:1, C3:2 });
+  ok(dv.levels.length === 5, "C1 не участвует");
+  ok(dv.levels.find(l => l.level === "C2").amount === D("6.72"), "C2 = 6.72");
+  ok(dv.levels.find(l => l.level === "C3").amount === D("28.8"), "C3 = 28.8");
+  ok(dv.total === D("35.52"), "итого 35.52");
+
+  // G. Даты и симуляция
+  const mon = new Date(2026, 0, 5, 12);
+  ok(mon.getDay() === 1, "2026-01-05 — понедельник");
+  ok(new Date(2026, 0, 9, 12).getDay() === 5, "2026-01-09 — пятница");
+  ok(new Date(2026, 0, 10, 12).getDay() === 6, "2026-01-10 — суббота");
+  ok(new Date(2026, 0, 11, 12).getDay() === 0, "2026-01-11 — воскресенье");
+
+  const sim = simulate(mon, 7, 0, ZERO, false, 0, false, 0);
+  ok(sim.days.length === 7, "7 дней");
+  ok(sim.finalBalance === D("28.8"), "баланс 28.8");
+  ok(sim.deposit === D("300"), "депозит 300");
+  ok(sim.gross === D("-271.2"), "прибыль -271.2");
+  ok(sim.withholding === D("-81.36"), "комиссия -81.36");
+  ok(sim.net === D("-189.84"), "чистая -189.84");
+
+  // H. Целевой баланс
+  const tb = targetBalance(mon, 0, ZERO, D("9.6"), false, 0, false, 0);
+  ok(tb.daysCount === 2, "2 полных дня");
+  ok(tb.lastSignals === 2, "последний день 2 сигнала");
+  ok(tb.totalSignals === 4, "всего 4 сигнала");
+  ok(tb.totalIncome === D("9.6"), "доход 9.6");
+  ok(tb.finalBalance === D("9.6"), "баланс 9.6");
+  ok(iso(tb.date) === "2026-01-06", "дата достижения 2026-01-06");
+
+  const tb2 = targetBalance(mon, 0, D("500"), D("100"), false, 0, false, 0);
+  ok(tb2.daysCount === 0 && tb2.lastSignals === 0, "цель уже достигнута");
+  ok(tb2.gross === D("200") && tb2.withholding === D("60") && tb2.net === D("140"), "200/60/140");
+
+  // I. Целевая чистая прибыль
+  const tp = targetProfit(mon, 5, D("10000"), D("224"), false, 0, false, 0);
+  ok(tp.daysCount === 1, "1 день");
+  ok(tp.lastSignals === 4, "4 сигнала");
+  ok(tp.totalIncome === D("320"), "доход 320");
+  ok(tp.finalBalance === D("10320"), "баланс 10320");
+  ok(tp.gross === D("320") && tp.withholding === D("96") && tp.net === D("224"), "320/96/224");
+
+  // J. Ошибки вместо падения
+  const throws = (fn) => { try { fn(); return false; } catch(e){ return true; } };
+  ok(throws(() => targetProfit(mon, 0, D("300"), D("-1"), false, 0, false, 0)), "отрицательная цель → ошибка");
+  ok(throws(() => targetBalance(mon, 0, D("300"), D("-5"), false, 0, false, 0)), "отрицательный баланс → ошибка");
+  ok(throws(() => simulate(mon, 5, 0, D("-1"), false, 0, false, 0)), "стартовый баланс -1 → ошибка");
+  ok(throws(() => targetBalance(mon, 0, ZERO, D("1000000"), false, 0, false, 0)), "недостижимая цель → ошибка");
+
+  // K. Конвертация ₽ → USDT
+  ok(divRound8(D("8000"), D("80")) === D("100"), "8000 ₽ / 80 = 100 USDT");
+  ok(divRound8(D("10"), D("3")) === D("3.33333333"), "10 ₽ / 3 = 3,33333333");
+  ok(divRound8(D("80"), D("75")) === D("1.06666667"), "80 ₽ / 75 = 1,06666667");
+
+  // L. Формат чисел
+  ok(fmt(D("1234567.5")) === "1 234 567,5", "формат 1 234 567,5");
+  ok(fmt(D("-271.2")) === "-271,2", "формат -271,2");
+
+  // M. Трастовый фонд
+  const tStart = new Date(2026, 0, 5, 12);    // 5 января
+  const t30    = new Date(2026, 1, 3, 12);    // 3 февраля → 30 дней
+  const t12    = new Date(2026, 0, 16, 12);   // 16 января → 12 дней
+
+  ok(TRUST_LEVELS.length === 4 && TRUST_LEVELS[0].key === "VIP1", "фонд: 4 уровня VIP Траст");
+
+  const f1 = trustFund(0, tStart, t30);
+  ok(f1.days === 30, "фонд: 30 дней (включительно)", String(f1.days));
+  ok(f1.sum === D("1000"), "фонд VIP1: тело 1000");
+  ok(f1.perDay === D("35.7"), "фонд VIP1: 35,7 в день");
+  ok(f1.gross === D("1071"), "фонд VIP1: 35,7 × 30 = 1071", fmt(f1.gross));
+  ok(f1.withholding === D("321.3"), "фонд VIP1: комиссия 321,3", fmt(f1.withholding));
+  ok(f1.net === D("749.7"), "фонд VIP1: чистыми 749,7", fmt(f1.net));
+
+  const f3 = trustFund(2, tStart, t30);
+  ok(f3.gross === D("6510") && f3.net === D("4557"),
+     "фонд VIP3: 217 × 30 = 6510 / 4557", fmt(f3.gross) + "/" + fmt(f3.net));
+
+  const f4 = trustFund(3, tStart, t30);
+  ok(f4.gross === D("15000") && f4.net === D("10500"),
+     "фонд VIP4: 500 × 30 = 15000 / 10500", fmt(f4.gross) + "/" + fmt(f4.net));
+
+  const f2 = trustFund(1, tStart, t12);
+  ok(f2.days === 12 && f2.gross === D("1440") && f2.net === D("1008"),
+     "фонд VIP2: 12 дней → 120 × 12 = 1440 / 1008",
+     f2.days + "дн " + fmt(f2.gross) + "/" + fmt(f2.net));
+
+  ok(throws(() => trustFund(0, t30, tStart)), "фонд: конец < начало → ошибка");
+
+  return { total: res.passed + res.failed, ...res };
+}
+
+/* ------------------------------- старт ------------------------------- */
+go(S.tab);
+</script>
+</body>
+</html>
