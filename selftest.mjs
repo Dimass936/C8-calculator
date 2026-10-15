@@ -91,7 +91,7 @@ const probe = `
     S.mode = "date"; S.start = "2026-10-15"; S.end = "2026-10-22";   // 8 дней
     S.level = "C1"; S.balance = "0"; S.x = "0";
     S.l1 = false; S.vip = false; S.auto = false;
-    S.trust = true; S.trustLevel = "0";
+    S.trust = true; S.trustLevels = [0];
     calcProfit();
     if (R.error) errors.push("фонд 8 дней: " + R.error);
     else if (!R.trust) errors.push("фонд: блок не посчитан");
@@ -123,11 +123,32 @@ const probe = `
     viewProfit();
 
     // уровень VIP Траст переключается
-    S.trustLevel = "3";
+    S.trustLevels = [3];
     calcProfit();
     if (R.error) errors.push("фонд VIP4: " + R.error);
     else if (R.trust.net !== dec("10500")) errors.push("фонд VIP4: чистыми " + fmt(R.trust.net));
     viewProfit();
+
+    // ДВА уровня сразу: VIP4 + VIP3 за те же 30 дней
+    S.trustLevels = [3, 2];
+    calcProfit();
+    if (R.error) errors.push("два уровня: " + R.error);
+    else if (R.trust.days !== 30) errors.push("два уровня: дней " + R.trust.days);
+    else if (R.trust.perDay !== dec("717"))
+      errors.push("два уровня: в день " + fmt(R.trust.perDay) + " вместо 717");
+    else if (R.trust.net !== dec("15057"))
+      errors.push("два уровня: чистыми " + fmt(R.trust.net) + " вместо 15 057");
+    const htmlTwo = viewProfit();
+    if (!htmlTwo.includes("VIP3") || !htmlTwo.includes("VIP4"))
+      errors.push("два уровня: в результате нет обеих строк");
+
+    // ни одного уровня — понятная ошибка, а не молчаливый ноль
+    S.trustLevels = [];
+    calcProfit();
+    if (R.error !== "Выберите хотя бы один уровень трастового фонда")
+      errors.push("без уровней: нет ожидаемой ошибки");
+    viewProfit();
+    S.trustLevels = [0];
 
     // 8) конец раньше начала → ошибка
     S.start = "2026-02-10"; S.end = "2026-02-01";
@@ -138,7 +159,7 @@ const probe = `
 
     // вне «до даты» периода нет → 6 месяцев от даты начала (срок по правилам)
     S.mode = "balance"; S.start = "2026-01-05"; S.balance = "0"; S.targetBalance = "1000";
-    S.trustLevel = "0";
+    S.trustLevels = [0];
     calcProfit();
     if (R.error) errors.push("фонд вне «до даты»: " + R.error);
     else if (R.trust.days !== 182)

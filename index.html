@@ -342,15 +342,27 @@ const TRUST_LEVELS = [
 ];
 TRUST_LEVELS.forEach(l => { l.sumD = dec(l.sum); l.perDayD = dec(l.perDay); });
 
-/** Расчёт фонда за календарный период; дни считаются включительно */
-function trustFund(levelIdx, start, end){
-  const lvl = TRUST_LEVELS[levelIdx];
-  if (!lvl) throw new Error("Неизвестный уровень трастового фонда");
+/** Расчёт фонда за календарный период; дни считаются включительно.
+    Уровней может быть несколько одновременно (например VIP4 и VIP3) — всё суммируется. */
+function trustFund(levelIdxs, start, end){
+  const idxs = (levelIdxs || []).slice().sort((a, b) => a - b);
+  if (!idxs.length) throw new Error("Выберите хотя бы один уровень трастового фонда");
   const days = diffDays(start, end) + 1;
   if (days < 1) throw new Error("Дата окончания не может быть раньше даты начала");
-  const gross = mulI(lvl.perDayD, days);
+
+  const levels = idxs.map(i => {
+    const lvl = TRUST_LEVELS[i];
+    if (!lvl) throw new Error("Неизвестный уровень трастового фонда");
+    return { key: lvl.key, sum: lvl.sumD, perDay: lvl.perDayD,
+             gross: mulI(lvl.perDayD, days) };
+  });
+  const sumAll = (get) => levels.reduce((s, l) => add(s, get(l)), ZERO);
+
+  const gross = sumAll(l => l.gross);
   const withholding = mul(gross, TRUST_WITHHOLD);
-  return { level: lvl.key, sum: lvl.sumD, perDay: lvl.perDayD, days,
+  return { levels, days,
+           sum: sumAll(l => l.sum),
+           perDay: sumAll(l => l.perDay),
            gross, withholding, net: mul(gross, NET_RATE) };
 }
 
@@ -514,7 +526,7 @@ const S = {
   vip: LS.get("c8.vip", false),
   auto: LS.get("c8.auto", true),
   trust: LS.get("c8.trust", false),
-  trustLevel: LS.get("c8.trustLevel", "0"),
+  trustLevels: LS.get("c8.trustLevels", []),
   // null = «идти за периодом расчёта»; строка = пользователь задал свой период
   trustStart: LS.get("c8.trustStart", null),
   trustEnd: LS.get("c8.trustEnd", null)
@@ -526,7 +538,7 @@ function save(){
   LS.set("c8.targetBalance", S.targetBalance); LS.set("c8.targetProfit", S.targetProfit);
   LS.set("c8.currency", S.currency); LS.set("c8.x", S.x); LS.set("c8.rate", S.rate);
   LS.set("c8.l1", S.l1); LS.set("c8.vip", S.vip); LS.set("c8.auto", S.auto);
-  LS.set("c8.trust", S.trust); LS.set("c8.trustLevel", S.trustLevel);
+  LS.set("c8.trust", S.trust); LS.set("c8.trustLevels", S.trustLevels);
   LS.set("c8.trustStart", S.trustStart); LS.set("c8.trustEnd", S.trustEnd);
 }
 
@@ -760,7 +772,10 @@ function viewProfit(){
       const t = R.trust;
       const signalDays = p.kind === "sim" ? p.days.length : p.daysCount;
       html += `<h2>Трастовый фонд</h2><div class="card">
-        ${row("Уровень", t.level)}
+        ${t.levels.map(l => `<div class="row">
+            <span class="t">${l.key}</span>
+            <span class="v">${fmt(l.sum)} $ · ${fmt(l.perDay)} $/день → <b>${fmt(l.gross)} $</b></span>
+          </div>`).join("")}
         ${row("Сумма в управлении", fmt(t.sum) + " $")}
         ${row("Прибыль в день", fmt(t.perDay) + " $")}
         ${row("Дней в периоде", String(t.days))}
@@ -807,22 +822,27 @@ function daysTable(days){
 function toggleDays(){ R.expanded = !R.expanded; renderView(); }
 function setMode(m){ S.mode = m; save(); R = {}; renderView(); }
 
-/** Поля трастового фонда: уровень + период (по умолчанию как в расчёте) */
+/** Поля трастового фонда: уровни (можно несколько) + период */
 function trustFields(){
-  const opts = TRUST_LEVELS.map((l, i) =>
-    `<option value="${i}" ${Number(S.trustLevel) === i ? "selected" : ""}>${l.key} · ${l.sum} $</option>`).join("");
-  const i = Number(S.trustLevel) || 0;
-  const lvl = TRUST_LEVELS[i];
   const p = trustPeriod();
+  const picked = S.trustLevels || [];
   const note = p.follows
     ? (S.mode === "date"
         ? "Период фонда совпадает с периодом расчёта — можно задать свой."
         : "6 месяцев от даты начала — срок по правилам. Можно задать свой период.")
     : "Свой период фонда, с периодом расчёта не связан.";
+
+  const levelRows = TRUST_LEVELS.map((l, i) => row(
+    `${l.key} · ${l.sum} $ · ${l.perDay} $/день`,
+    sw("trustLevel" + i, picked.includes(i), `setTrustLevel(${i}, this.checked)`)
+  )).join("");
+  const perDay = TRUST_LEVELS.reduce((s, l, i) =>
+    picked.includes(i) ? add(s, l.perDayD) : s, ZERO);
+
   return `
-    <div class="row"><span class="t">Уровень (VIP Траст)</span>
-      <select onchange="setP('trustLevel', this.value)">${opts}</select></div>
-    ${row("Прибыль в день", fmt(lvl.perDayD) + " $", "muted")}
+    <div class="hint" style="padding-top:2px">Можно выбрать несколько уровней сразу.</div>
+    ${levelRows}
+    ${row("Прибыль в день (итого)", fmt(perDay) + " $", "muted")}
     <div class="row"><span class="t">Период с</span>
       <input type="date" value="${iso(p.from)}" onchange="setTrustDate('trustStart', this.value)"></div>
     <div class="row"><span class="t">по</span>
@@ -834,6 +854,14 @@ function trustFields(){
 }
 function setP(key, val){ S[key] = val; save(); R = {}; renderView(); }
 function setTrust(on){ S.trust = on; save(); R = {}; renderView(); }
+
+/** Отметить/снять уровень фонда — уровней может быть несколько сразу */
+function setTrustLevel(i, on){
+  const set = new Set(S.trustLevels || []);
+  if (on) set.add(i); else set.delete(i);
+  S.trustLevels = Array.from(set).sort((a, b) => a - b);
+  save(); R = {}; renderView();
+}
 
 /** Период фонда: по умолчанию ВЫВОДИТСЯ из периода расчёта, но пользователь может
     задать свой. null в trustStart/trustEnd означает «идти за расчётом» —
@@ -879,7 +907,7 @@ function calcProfit(){
     // в датах показывалась пользователю, а не роняла страницу
     if (S.trust){
       const p = trustPeriod();
-      R.trust = trustFund(Number(S.trustLevel) || 0, p.from, p.to);
+      R.trust = trustFund(S.trustLevels || [], p.from, p.to);
     }
 
     if (S.mode === "date"){
@@ -1041,7 +1069,7 @@ function runSelfTests(){
 
   ok(TRUST_LEVELS.length === 4 && TRUST_LEVELS[0].key === "VIP1", "фонд: 4 уровня VIP Траст");
 
-  const f1 = trustFund(0, tStart, t30);
+  const f1 = trustFund([0], tStart, t30);
   ok(f1.days === 30, "фонд: 30 дней (включительно)", String(f1.days));
   ok(f1.sum === D("1000"), "фонд VIP1: тело 1000");
   ok(f1.perDay === D("35.7"), "фонд VIP1: 35,7 в день");
@@ -1049,20 +1077,29 @@ function runSelfTests(){
   ok(f1.withholding === D("321.3"), "фонд VIP1: комиссия 321,3", fmt(f1.withholding));
   ok(f1.net === D("749.7"), "фонд VIP1: чистыми 749,7", fmt(f1.net));
 
-  const f3 = trustFund(2, tStart, t30);
+  const f3 = trustFund([2], tStart, t30);
   ok(f3.gross === D("6510") && f3.net === D("4557"),
      "фонд VIP3: 217 × 30 = 6510 / 4557", fmt(f3.gross) + "/" + fmt(f3.net));
 
-  const f4 = trustFund(3, tStart, t30);
+  const f4 = trustFund([3], tStart, t30);
   ok(f4.gross === D("15000") && f4.net === D("10500"),
      "фонд VIP4: 500 × 30 = 15000 / 10500", fmt(f4.gross) + "/" + fmt(f4.net));
 
-  const f2 = trustFund(1, tStart, t12);
+  const f2 = trustFund([1], tStart, t12);
   ok(f2.days === 12 && f2.gross === D("1440") && f2.net === D("1008"),
      "фонд VIP2: 12 дней → 120 × 12 = 1440 / 1008",
      f2.days + "дн " + fmt(f2.gross) + "/" + fmt(f2.net));
 
-  ok(throws(() => trustFund(0, t30, tStart)), "фонд: конец < начало → ошибка");
+  // Два уровня сразу: VIP4 + VIP3
+  const fm = trustFund([3, 2], tStart, t30);
+  ok(fm.levels.length === 2, "фонд: два уровня сразу");
+  ok(fm.perDay === D("717"), "фонд VIP4+VIP3: 500 + 217 = 717 в день", fmt(fm.perDay));
+  ok(fm.sum === D("15000"), "фонд VIP4+VIP3: сумма 15 000", fmt(fm.sum));
+  ok(fm.gross === D("21510"), "фонд VIP4+VIP3: 717 × 30 = 21 510", fmt(fm.gross));
+  ok(fm.net === D("15057"), "фонд VIP4+VIP3: чистыми 15 057", fmt(fm.net));
+
+  ok(throws(() => trustFund([], tStart, t30)), "фонд: ни одного уровня → ошибка");
+  ok(throws(() => trustFund([0], t30, tStart)), "фонд: конец < начало → ошибка");
 
   return { total: res.passed + res.failed, ...res };
 }
