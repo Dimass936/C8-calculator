@@ -725,21 +725,31 @@ function viewProfit(){
 
   if (R.profit){
     const p = R.profit, rate = R.rate;
+    // Сколько именно заработано сигналами за период — без стартового излишка над депозитом
+    const income = (p.kind === "sim")
+      ? p.days.reduce((s, d) => add(s, d.income), ZERO)
+      : p.totalIncome;
+    const surplus = sub(R.startBalance, p.deposit);
+
     html += `<h2>Результат</h2><div class="card">`;
+    html += row("Стартовый баланс", fmt(R.startBalance) + " USDT", "muted");
     if (p.kind === "sim"){
       html += row("Дней", String(p.days.length));
-      html += row("Ожидаемый баланс", fmt(p.finalBalance) + " USDT");
     } else {
       html += row("Дата достижения", fmtDate(p.date));
       html += row("После сигнала", String(p.lastSignals));
       html += row("Календарных дней", String(p.daysCount));
       html += row("Сигналов", String(p.totalSignals));
-      html += row("Доход за период", fmt(p.totalIncome) + " USDT");
-      html += row("Достигнутый баланс", fmt(p.finalBalance) + " USDT");
     }
+    html += row("Доход за период (сигналы)", fmt(income) + " USDT", "green");
+    html += row(p.kind === "sim" ? "Ожидаемый баланс" : "Достигнутый баланс",
+                fmt(p.finalBalance) + " USDT");
     html += row("Итоговый уровень", p.finalLevel.key);
     html += row("Депозит уровня", fmt(p.deposit) + " USDT");
     html += row("Прибыль до удержания", fmt(p.gross) + " USDT");
+    if (surplus > ZERO){
+      html += row("в т.ч. было сверх депозита", fmt(surplus) + " USDT", "muted");
+    }
     html += row("Комиссия 30%", fmt(p.withholding) + " USDT");
     html += row("Чистая прибыль", fmt(p.net) + " USDT", "green");
     html += row("Чистая прибыль, ₽", fmt(mul(p.net, rate)) + " ₽");
@@ -761,7 +771,7 @@ function viewProfit(){
         ${row("Возврат тела в конце срока", fmt(t.sum) + " $", "muted")}
       </div>`;
       html += `<h2>Итого с фондом</h2><div class="card">
-        ${row("Чистая прибыль по сигналам", fmt(p.net) + " USDT")}
+        ${row("Чистая прибыль по сигналам + сверх депозит", fmt(p.net) + " USDT")}
         ${row("Чистая прибыль фонда", fmt(t.net) + " $")}
         ${row("Итого с фондом", fmt(add(p.net, t.net)) + " $", "green")}
         ${row("Итого с фондом, ₽", fmt(mul(add(p.net, t.net), rate)) + " ₽")}
@@ -862,6 +872,7 @@ function calcProfit(){
   const lvl = LEVELS.findIndex(l => l.key === S.level);
   const start = parseDate(S.start);
   R.rate = rate;
+  R.startBalance = balance;
 
   try {
     // Трастовый фонд — отдельная механика; считаем внутри try, чтобы ошибка

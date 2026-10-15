@@ -106,6 +106,8 @@ const probe = `
       errors.push("нет строки «Чистыми по фонду, ₽»");
     if (!htmlTrust.includes("Итого с фондом, ₽"))
       errors.push("нет строки «Итого с фондом, ₽»");
+    if (!htmlTrust.includes("Чистая прибыль по сигналам + сверх депозит"))
+      errors.push("нет строки «Чистая прибыль по сигналам + сверх депозит»");
     // VIP1, 8 дней: 285,6 × 0,7 = 199,92 $; × 80 ₽ = 15 993,6 ₽
     if (!htmlTrust.includes("15 993,6"))
       errors.push("₽ по фонду: не найдено 15 993,6");
@@ -188,6 +190,36 @@ const probe = `
     if (!dMon || dMon.signals !== 4) errors.push("Пн: ожидалось 4 сигнала");
     if (!dMon || dMon.income !== dec("320")) errors.push("Пн: ожидался доход 320");
     viewProfit();
+
+    // 11) прибыль от сигналов НЕ должна включать стартовый излишек над депозитом
+    S.mode = "date"; S.start = "2026-10-15"; S.end = "2026-10-22";   // 8 дней
+    S.level = "C6"; S.balance = "13500"; S.x = "0";
+    S.vip = false; S.l1 = false; S.auto = false; S.trust = false;
+    calcProfit();
+    if (R.error) errors.push("прибыль от сигналов: " + R.error);
+    else {
+      if (R.profit.gross !== dec("5580"))
+        errors.push("прибыль до удержания: ожидалось 5580, получено " + fmt(R.profit.gross));
+      const inc = R.profit.days.reduce((s, d) => add(s, d.income), ZERO);
+      if (inc !== dec("2080"))
+        errors.push("доход за период: ожидалось 2080, получено " + fmt(inc));
+      if (R.startBalance !== dec("13500"))
+        errors.push("стартовый баланс не сохранён: " + fmt(R.startBalance));
+    }
+    const htmlRes = viewProfit();
+    if (!htmlRes.includes("Доход за период (сигналы)"))
+      errors.push("нет строки «Доход за период (сигналы)»");
+    if (!htmlRes.includes("в т.ч. было сверх депозита"))
+      errors.push("нет пояснения про стартовый излишек");
+    if (!htmlRes.includes("2 080")) errors.push("нет значения дохода 2 080");
+    if (!htmlRes.includes("3 500")) errors.push("нет значения излишка 3 500");
+
+    // если стартовый баланс равен депозиту — пояснения быть не должно
+    S.balance = "10000";
+    calcProfit();
+    const htmlNoSurplus = viewProfit();
+    if (htmlNoSurplus.includes("в т.ч. было сверх депозита"))
+      errors.push("излишка нет, а строка про него показана");
   } catch (e) { errors.push("прогноз: " + e.message); }
 
   return { tests: runSelfTests(), errors };
